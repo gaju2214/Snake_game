@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            display: block;
+            margin: 0 auto;
+        }
+        .controls {
+            text-align: center;
+            margin-top: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div class="controls">
+        <button id="pauseResumeButton">Pause</button>
+        <button id="startOverButton">Start Over</button>
+    </div>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+    
+        const box = 20;
+        let snake = [{ x: 9 * box, y: 10 * box }];
+        let direction = "RIGHT"; // Default direction
+        let food = {
+            x: Math.floor(Math.random() * 20) * box,
+            y: Math.floor(Math.random() * 20) * box,
+        };
+        let bigFood = null; // Big dot
+        let score = 0;
+        let foodCount = 0; // Track regular food eaten
+        let game;
+        let isPaused = false; // Track pause state
+    
+        document.addEventListener("keydown", changeDirection);
+        document.getElementById("pauseResumeButton").addEventListener("click", togglePauseResume);
+        document.getElementById("startOverButton").addEventListener("click", startOverGame);
+    
+        function changeDirection(event) {
+            if (event.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
+            else if (event.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+            else if (event.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
+            else if (event.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
+        }
+    
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+            // Draw snake
+            for (let i = 0; i < snake.length; i++) {
+                ctx.fillStyle = i === 0 ? "green" : "lightgreen";
+                ctx.fillRect(snake[i].x, snake[i].y, box, box);
+                ctx.strokeStyle = "darkgreen";
+                ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+            }
+    
+            // Draw regular food
+            ctx.fillStyle = "red";
+            ctx.fillRect(food.x, food.y, box, box);
+    
+            // Draw big food if it exists
+            if (bigFood) {
+                ctx.fillStyle = "Yellow";
+                ctx.font = "30px Arial";
+                ctx.beginPath();
+                ctx.arc(bigFood.x + box / 2, bigFood.y + box / 2, box / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.closePath();
+            }
+    
+            // Move snake
+            let snakeX = snake[0].x;
+            let snakeY = snake[0].y;
+    
+            if (direction === "UP") snakeY -= box;
+            if (direction === "DOWN") snakeY += box;
+            if (direction === "LEFT") snakeX -= box;
+            if (direction === "RIGHT") snakeX += box;
+    
+            // Check if snake eats regular food
+            if (snakeX === food.x && snakeY === food.y) {
+                score++;
+                foodCount++;
+                food = {
+                    x: Math.floor(Math.random() * 20) * box,
+                    y: Math.floor(Math.random() * 20) * box,
+                };
+    
+                // Spawn big food after 5 regular food items
+                if (foodCount % 5 === 0) {
+                    bigFood = {
+                        x: Math.floor(Math.random() * 20) * box,
+                        y: Math.floor(Math.random() * 20) * box,
+                    };
+                }
+            } else if (bigFood && snakeX === bigFood.x && snakeY === bigFood.y) {
+                // Check if snake eats big food
+                score += 5;
+                bigFood = null; // Remove big food after it's eaten
+            } else {
+                snake.pop();
+            }
+    
+            // Add new head
+            const newHead = { x: snakeX, y: snakeY };
+    
+            // Check collision
+            if (
+                snakeX < 0 ||
+                snakeY < 0 ||
+                snakeX >= canvas.width ||
+                snakeY >= canvas.height ||
+                collision(newHead, snake)
+            ) {
+                clearInterval(game);
+                alert("Game Over! Your score: " + score);
+            }
+    
+            snake.unshift(newHead);
+    
+            // Draw score
+            ctx.fillStyle = "black";
+            ctx.font = "20px Arial";
+            ctx.fillText("Score: " + score, 10, 20);
+        }
+    
+        function collision(head, array) {
+            for (let i = 0; i < array.length; i++) {
+                if (head.x === array[i].x && head.y === array[i].y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    
+        function togglePauseResume() {
+            if (isPaused) {
+                // Resume the game
+                game = setInterval(drawGame, 150);
+                document.getElementById("pauseResumeButton").textContent = "Pause";
+            } else {
+                // Pause the game
+                clearInterval(game);
+                document.getElementById("pauseResumeButton").textContent = "Resume";
+            }
+            isPaused = !isPaused;
+        }
+    
+        function startOverGame() {
+            clearInterval(game);
+            snake = [{ x: 9 * box, y: 10 * box }];
+            direction = "RIGHT";
+            score = 0;
+            foodCount = 0;
+            food = {
+                x: Math.floor(Math.random() * 20) * box,
+                y: Math.floor(Math.random() * 20) * box,
+            };
+            bigFood = null;
+            isPaused = false;
+            document.getElementById("pauseResumeButton").textContent = "Pause";
+            game = setInterval(drawGame, 150);
+        }
+    
+        game = setInterval(drawGame, 150);
+    </script>
+</body>
+</html>
